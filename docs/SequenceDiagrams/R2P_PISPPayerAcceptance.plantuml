@@ -1,0 +1,120 @@
+@startuml
+' Flows are based on the third pary API v2.0
+footer Payer acceptance of R2P Transfers using Third Party Integration
+
+actor "Payer" as Payer
+participant "Third Party" as PISP
+participant "Payer DFSP" as PayerDFSP
+participant "Mojaloop" as Mojaloop  #d4f2f9
+participant "Auth-Service" as Auth  #d4f2f9
+participant "Payee DFSP" as PayeeDFSP
+actor "Payee" as Payee
+autonumber 1 "<b>[0]"
+
+=== Request to pay  ==
+
+Payee->PayeeDFSP: Initiate a payment request
+PayeeDFSP->>Mojaloop: **GET** /parties
+activate PayeeDFSP
+note left
+  This is a standard Discovery flow
+  to lookup Payer
+end note
+Mojaloop->>PayerDFSP: **GET** /parties
+
+
+PayerDFSP->>Mojaloop: **PUT** /parties
+Mojaloop->>PayeeDFSP: **PUT** /parties
+deactivate PayeeDFSP
+
+
+PayeeDFSP->>Mojaloop: **POST** /transactionRequests
+activate PayeeDFSP
+Mojaloop->>PayerDFSP: **POST** /transactionRequests
+PayerDFSP->PayerDFSP: Validate request\n to pay request
+PayerDFSP->>Mojaloop: **PUT** /transactionRequests/{ID}
+note left
+{
+  "transactionId": "b51ec534-ee48-4575-b6a9-ead2955b8069",
+  "transactionRequestState": "RECEIVED",
+  "AuthenticationType": {}
+  "extensionList": {extension:[]}
+}
+end note
+Mojaloop->>PayeeDFSP: **PUT** /transactionRequests
+deactivate PayeeDFSP
+
+=== Payer DFSP executes R2P request ==
+
+PayerDFSP->>Mojaloop:  **POST** /quotes
+activate PayerDFSP
+Mojaloop->>PayeeDFSP:  **POST** /quotes
+PayeeDFSP->>Mojaloop: **PUT** /quotes
+Mojaloop->>PayerDFSP: **PUT** /quotes
+deactivate PayerDFSP
+
+
+alt if Payer is registered for PISP
+
+  PayerDFSP->PayerDFSP: Generate Authorization request Id 
+  note left
+  Derive the authorisation challenge 
+  that include the terms of the transfer  
+  Transaction object that includes:
+    - payee detail
+    - amount and fees
+  end note 
+  
+  PayerDFSP->>Mojaloop: **POST** /tppAuthorizations
+  activate PayerDFSP
+  Mojaloop->>PISP: **POST** /tppAuthorizations
+
+  PISP->Payer: Present challenge to Payer
+
+
+  Payer->PISP: Payer signs challenge
+  PISP->>Mojaloop: **PUT** /tppAuthorizations
+  note left
+  Provide signed challenge
+  end note
+  Mojaloop->>PayerDFSP: **PUT** /tppAuthorizations
+  deactivate PayerDFSP
+  note left
+  Signed challenge received
+  end note
+  PayerDFSP->PayerDFSP: Validate Transaction Request Id, \nAuthorisation Id and Consent Id
+  alt if (Centralised Auth Service)
+  PayerDFSP->PayerDFSP: Generate VerificationRequestId
+  PayerDFSP->>Mojaloop: **POST** /tppVerifications
+  activate PayerDFSP
+  Mojaloop->>Auth: **POST** /tppVerifications
+  Auth->Auth: Validate ConsentId,\n account Addresss, \nand signed consent
+  note left
+  Validate signed consent
+  end note
+  Auth->>Mojaloop: **PUT** /tppVerifications
+  Mojaloop->>PayerDFSP: **PUT** /tppVerifications
+  deactivate PayerDFSP
+  else 
+  PayerDFSP->PayerDFSP: Validate signed consent
+  note left
+  Validate signed consent
+  end note
+  end 
+
+else if AuthenticateType is null
+PayerDFSP->Payer: Present payment terms\n to Payer for acceptance
+Payer->PayerDFSP: I accept the payment terms
+end
+
+PayerDFSP->PayerDFSP: Reserve funds against \nPayer's account
+activate PayerDFSP
+PayerDFSP->>Mojaloop: **POST** /transfers
+Mojaloop->>PayeeDFSP: **POST** /transfers
+PayeeDFSP->Payee: Distribute funds \nPayee Notified
+PayeeDFSP->>Mojaloop: **PUT** /transfers \nreturn fulfilment
+Mojaloop->>PayerDFSP: **PUT** /transfers
+deactivate PayerDFSP
+
+
+@enduml

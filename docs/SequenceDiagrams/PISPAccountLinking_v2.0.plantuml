@@ -1,0 +1,180 @@
+@startuml
+' Flows are based on the third pary API v2.0
+footer Third Party Payment (TPP) API v2.0
+
+actor "Payer" as Payer
+participant "Third Party" as PISP
+participant "Payer DFSP" as PayerDFSP
+box Mojaloop Hub
+participant "Mojaloop" as Mojaloop  #d4f2f9
+participant "Account Lookup Service" as ALS  #d4f2f9
+participant "Auth-Service" as Auth  #d4f2f9
+end box
+autonumber 1 "<b>[0]"
+
+=== Account Linking with Account Discovery ==
+
+Payer->PISP: Initiate Linking
+
+Note left
+UserId
+end note
+
+== Pre-linking ==
+PISP->>Mojaloop: **GET** /services/third_party_dfsp 
+activate PISP
+note left 
+What DFSP are available to link with?
+end note
+Mojaloop->>PISP: **PUT** /services/third_party_dfsp 
+deactivate PISP
+PISP->Payer: User presented with a list of dfsps to link
+
+== Account Discovery with Consent ==
+
+Payer->PISP: User selects the dfsp to link with
+PISP->>Mojaloop: **POST** /tppAccountsRequest 
+activate PISP
+note left 
+0. AccountRequestId
+1. User Id
+3. Acceptable authentication channels
+   - OTP
+4. Callback URL
+end note
+Mojaloop->>PayerDFSP:**POST** /tppAccountsRequest 
+PayerDFSP->PayerDFSP: Validate the consent request\n and derive the challenge.
+PayerDFSP->Payer: Prepare user for authorisation
+
+PayerDFSP->>Mojaloop:**PUT** /tppAccountsRequest 
+Mojaloop->>PISP: **PUT** /tppAccountsRequest
+deactivate PISP
+
+PISP->Payer: Request authorisation from user
+Payer->PISP: User Completes Authorisation
+note right
+User completes challenge to confirm identity
+end note
+PISP->>Mojaloop:  **GET** /tppAccounts/{AccountRequestId}/{SignedChallenge} 
+activate PISP
+Mojaloop->>PayerDFSP: **GET** /tppAccounts/
+PayerDFSP->PayerDFSP: Verify that the OTP is correct
+
+PayerDFSP->>Mojaloop: **PUT** /tppAccounts
+Mojaloop->>PISP: **PUT** /tppAccounts
+deactivate PISP
+PISP->Payer: User presented with a list of accounts to link
+
+== Consent ==
+
+Payer->PISP: User selects the account/s to link with
+note left 
+Accounts to link
+end note
+PISP->>Mojaloop: **POST** /tppConsentRequests 
+activate PISP
+note left 
+1. User Id
+2. Scope of request
+  [{accountId:{dfsp.userId.AccountType}},
+  actions:
+  ["ACCOUNTS_GET_BALANCE", 
+   "ACCOUNTS_TRANSFER", 
+   "ACCOUNTS_STATEMENT"]}]
+3. Acceptable authentication channels
+   - Web
+   - OTP
+4. Callback URL
+end note
+Mojaloop->>PayerDFSP:**POST** /tppConsentRequests 
+PayerDFSP->PayerDFSP: Validate the consent request
+alt if Web authentication
+PayerDFSP->PayerDFSP: Configure deployment to support callback URL
+end
+PayerDFSP->Payer: Prepare user for challenge
+
+PayerDFSP->>Mojaloop:**PUT** /tppConsentRequests 
+Mojaloop->>PISP: **PUT** /tppConsentRequests 
+
+PISP->Payer: Present challenge to user
+Payer->PISP: User Completes Challenge
+note right
+User completes challenge to confirm identity
+end note
+PISP->>Mojaloop: **PATCH** /tppConsentRequests 
+Mojaloop->>PayerDFSP: **PATCH** /tppConsentRequests 
+
+alt if WEB
+PayerDFSP->PayerDFSP: Verify that the auth token is correct
+else if OTP
+PayerDFSP->PayerDFSP: Verify that the OTP is correct
+end
+note right
+If successful, the Payer DFSP has confirmed the users identity establishing a chain of trust:
+1. The **Payer DFSP trusts the Payer**
+     The Payer DFSP gives the Payer a secret
+2. The **Payer trusts the PISP**
+     The Payer gives the PISP the secret that came from the Payer DFSP
+     The PISP gives the secret to the Payer DFSP
+     The Payer DFSP verified that the secret is correct
+end note
+
+PayerDFSP->>Mojaloop: **POST** /tppConsents
+note right
+1. Consent created
+2. status = "ISSUED"
+3. scope of consent
+4. address provided {dfsp.userId.AccountType}
+end note
+Mojaloop->>PISP: **POST** /tppConsents
+
+== Credential Registration ==
+PISP->PISP: Derive the Challenge
+note right
+The challenge is a string. 
+Recommended challenge: SHA256(CJSON({"consentId": <body.consentId>, "scopes": <body.scopes>}))
+end note
+PISP->PISP: Digitally sign the Challenge
+
+PISP->PISP: Build the credential
+note left
+CredentialTypeGeneric {
+  credentialType: 'GENERIC'
+  status: 'PENDING',
+  payload: {
+    publicKey: base64(...),
+    signature: base64(...),
+  }
+}
+end note
+PISP->>Mojaloop: **PUT** /tppConsents/{Id}
+Mojaloop->>PayerDFSP: **PUT** /tppConsents/{Id}
+
+alt if (Centralised Auth Service)
+PayerDFSP->>Mojaloop: **POST** /tppConsents
+Mojaloop->>Auth: **POST** /tppConsents
+Auth->>ALS: **POST** /participants/tppConsents
+ALS->>Auth: **PUT** /participants/tppConsents
+Auth->>Mojaloop: **PUT** /tppConsents
+Mojaloop->>PayerDFSP: **PUT** /tppConsents
+else
+PayerDFSP->PayerDFSP: Store consent
+end
+
+loop for each scope
+PayerDFSP->>ALS: **POST** /participants/THIRD_PARTY_LINK/{dfsp.userId.AccountType}
+note left
+Register DFSP against ALS
+- Needed for source of funds
+end note
+ALS->>PayerDFSP: **PUT** /participants/THIRD_PARTY_LINK/{dfsp.userId.AccountType}
+end 
+PayerDFSP->>Mojaloop: **PATCH** /ttpConsents status:"VERIFIED"
+Mojaloop->>PISP: **PATCH** /ttpConsents status:"VERIFIED"
+
+note left
+Consent is now in place and verified.
+end note
+PISP->PISP: Store scope and \naddress information\n for user
+PISP->Payer:  Notify user of successfull linking
+@enduml
