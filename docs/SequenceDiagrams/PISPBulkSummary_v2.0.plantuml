@@ -1,0 +1,257 @@
+@startuml
+' Flows are based on the third pary API v2.0
+footer Third Party Payment PISP API v2.0
+
+actor "Payer" as Payer
+participant "Third Party" as PISP
+participant "Payer DFSP" as PayerDFSP
+participant "Mojaloop" as Mojaloop  #d4f2f9
+participant "Auth-Service" as Auth  #d4f2f9
+participant "Payee DFSP" as PayeeDFSP
+actor "Payee" as Payee
+autonumber 1 "<b>[0]"
+
+
+== Pre bulk address list validation  ==
+Payer->PISP: Pre bulk payment list validation
+note left
+For example
+{
+  payeeList: [
+  "party": {
+    "partyIdInfo": {
+      "partyIdType": "MSISDN",
+      "partyIdentifier": "16135551212",
+      "partySubIdOrType": "string",
+    },
+    "personalInfo": {
+      "complexName": {
+        "firstName": "Henrik",
+        "middleName": "Johannes",
+        "lastName": "Karlsson"
+      }
+    }
+  }]
+}
+end note
+
+loop  Discovery Processing: For each individualTransfer in bulk message
+hnote left of PayerDFSP
+      Resolving all potential recipients 
+      which might be at any of the DFSPs 
+      on the service.
+end hnote
+
+PISP->>Mojaloop: **GET** /parties
+activate PISP
+note left
+  This is a standard Discovery flow
+end note
+Mojaloop->Mojaloop: query oracle to \ndetermine Payee DFSP
+Mojaloop->>PayeeDFSP: **GET** /parties
+PayeeDFSP->>Mojaloop: **PUT** /parties
+Mojaloop->>PISP: **PUT** /parties
+deactivate PISP
+end 
+PISP->PISP: Validate that all the account names\n returned by the GET /parties\n match the names provided
+
+PISP-->Payer: Return 
+
+=== Bulk Transfer ==
+
+Payer->PISP: Initiate a bulk payment
+
+PISP->>Mojaloop: **POST** /tppBulkTransactions
+activate PISP
+note left
+{
+  bulkTransactionRequestId: {}
+  Payer: {
+    partyIdType:"THIRD_PARTY_LINK",
+    partyIdentifier:{dfsp.userId.AccountType},
+    fspId:{PayerDFSP}},
+  geoCode: {},
+  expiration: "2016-05-24T08:38:08.699-04:00",
+  individualQuotes:[
+    {
+      quoteId: ,
+      transactionId,
+      payee: {...},
+      amountType: "SEND/RECEIVE",
+      amount:{...},
+      transactionType:{
+        scenario:"DEPOSIT/WITHDRAWAL/TRANSFER/PAYMENT/REFUND",
+        subScenario:{scheme specific}
+        initiator: "PAYER/PAYEE",
+        initiatorType: "CONSUMER/AGENT/BUSINESS/DEVICE",
+        refundInfo: {...},
+        balanceOfPayments: "123"
+      },
+      note: "any string here",
+      extensionList: [{key:{},value:{}},],
+    },
+  ],
+  extensionList: [{key:{},value:{}},],
+}
+end note
+Mojaloop->>PayerDFSP: **POST** /tppBulkTransactions
+PayerDFSP->PayerDFSP: Lookup consent and validate
+PayerDFSP->PayerDFSP: Store transaction request and generate BulkTransactionId
+note left
+Begin standard SDK bulk enhancement flow
+end note
+
+== Third Party Bulk Payment: Discovery ==
+loop  Discovery Processing: For each individualTransfer in bulk message
+hnote right of PayerDFSP
+      Resolving all potential recipients 
+      which might be at any of the DFSPs 
+      on the service.
+end hnote
+    PayerDFSP ->> Mojaloop: **GET** /parties/*
+    activate PayerDFSP
+    Mojaloop->Mojaloop: query oracle to \ndetermine Payee DFSP
+    Mojaloop->>PayeeDFSP: **GET** /parties/*
+        note right
+        Lookup / validate 
+        party information
+        end note
+      PayeeDFSP-->>Mojaloop: **PUT** /parties/{type}/{id}
+    Mojaloop-->>PayerDFSP: **PUT** /parties/{type}/{id}
+    deactivate PayerDFSP
+
+end Loop
+
+PayerDFSP->PayerDFSP: Group Valid Transfers into batches
+
+== Third Party Bulk Payement : Agreement ==
+
+loop Agreement Processing: For each batch in bulk message
+hnote right of PayerDFSP
+  Each DFSP is provided the opportunity to
+  perform AML checks and add costs 
+  or discounts to each transfer.
+end hnote
+    PayerDFSP ->> Mojaloop: **POST** /bulkquotes
+    activate PayerDFSP
+    Mojaloop->>PayeeDFSP: **POST** /bulkquotes
+      PayeeDFSP->PayeeDFSP: Validate bulk quote & \ncalculate fees & \nperform AML checks
+    PayeeDFSP-->>Mojaloop: **PUT** /bulkquotes/{id)
+    Mojaloop-->>PayerDFSP: **PUT** /bulkquotes/{id)
+    deactivate  PayerDFSP
+end loop
+
+PayerDFSP->PayerDFSP: Generate Authorization request Id (map to transaction request id)
+  
+PayerDFSP->PayerDFSP: Create the challenge (based off transfer details)
+note left
+ Derive the authorisation challenge    
+end note
+
+PayerDFSP->Mojaloop: **PUT** /tppBulkTransactitons
+note left
+**PUT /tppBulkTransactions/2ab438fb-43ba-41db-a6f0-18a69fbea7cc**
+FSPIOP-Source: dfspPayer
+FSPIOP-Destination: pisp
+{
+  "authorizationRequestId": "bc8f5e1a-2a6f-4feb-b40b-793ea9fda7c2",
+  "bulkTransactionRequestId": "2ab438fb-43ba-41db-a6f0-18a69fbea7cc",
+  "challenge": "d9f69f0f2a1f286c204c7d0c8427d38af11ce7fcfb4cfdf6d32daaba2f56337d",
+  "transferAmount": {"amount": "500","currency": "PHP"},
+  "payer": {...},
+  "payee": {...},
+  "transactionType": {
+    "scenario": "TRANSFER",
+    "initiator": "PAYER",
+    "initiatorType": "CONSUMER"
+  },
+  "expiration": "2020-06-15T12:00:00.000"
+}
+end note
+Mojaloop->PISP: **PUT** /tppBulkTransactitons
+deactivate PISP
+
+PISP->Payer: Present challenge to Payer
+
+== Thirdpary Transaction Request : Transfer ==
+
+Payer->PISP: Payer signs challenge
+PISP->>Mojaloop: **POST** /tppBulkTransfers
+note left
+Provide signed challenge 
+
+**POST /tppBulkTransfers**
+FSPIOP-Source: pispa
+FSPIOP-Destination: dfspa
+{
+  "executionRequestId": "b0abec90-4be5-4c58-8f1a-e5a8c5cfde89",
+  "bulkTransactionRequestId": "2ab438fb-43ba-41db-a6f0-18a69fbea7cc",
+  "signedPayload": {
+    "signedPayloadType": "FIDO",
+    "value": {
+      "id": "string",
+      "rawId": "d9f69f0f2a1f286c204c7d0c8427d38af11ce7fcfb4cfdf6d32daaba2f56337d",
+      "response": {
+        "authenticatorData": "string - base64 encoded utf-8",
+        "clientDataJSON": "string - base64 encoded utf-8",
+        "signature": "f9d6e86c75e3f7b1cf9b43e8b5ff5fc31a9dc1ee77d66681243b01e3c3c6654c",
+        "userHandle": "string - base64 encoded utf-8",
+      },
+      "type": "public-key"
+    }
+  }
+}
+end note
+activate PISP
+Mojaloop->>PayerDFSP: **POST** /tppBulkTransfers
+deactivate PayerDFSP
+note left
+ Acceptance of transfer terms received
+ Signed challenge received 
+end note
+PayerDFSP->PayerDFSP: Validate Transaction Request Id, \nAuthorisation Id and Consent Id
+
+alt if (Centralised Auth Service required to verify it)
+
+  PayerDFSP->PayerDFSP: Generate VerificationRequestId
+  PayerDFSP->>Mojaloop: **POST** /tppVerifications
+  activate PayerDFSP
+  Mojaloop->>Auth: **POST** /ttpVerifications
+  Auth->Auth: Validate ConsentId,\n account Addresss, \nand signed consent
+  note left
+  Validate signed consent
+  end note
+  Auth->>Mojaloop: **PUT** /ttpVerifications
+  Mojaloop->>PayerDFSP: **PUT** /ttpVerifications
+  deactivate PayerDFSP
+
+else if (No centralised Auth Service configured)
+
+  PayerDFSP->PayerDFSP: Validate signed consent
+  note left
+  Validate signed consent
+  end note
+
+end 
+
+loop Transfer Processing: For each batch in bulk message
+  hnote right of PayerDFSP
+    Each DFSP is messaged to proceed 
+    with the transfer. Results 
+    are captured and returned.
+  end hnote
+    PayerDFSP ->> Mojaloop: **POST** /bulktransfers
+    activate PayerDFSP
+    Mojaloop ->> PayeeDFSP: **POST** /bulktransfers
+    PayeeDFSP->PayeeDFSP: Bulk transfer is \ncommitted in \nbackend system
+    PayeeDFSP ->> Mojaloop: **PUT** /bulktransfers/{id} (BulkStatus)
+    Mojaloop ->>PayerDFSP:**PUT** /bulktransfers/{id}
+    deactivate PayerDFSP    
+end loop
+
+PayerDFSP->>Mojaloop: **PUT** /ttpBulkTransfers
+Mojaloop->>PISP: **PUT** /ttpBulkTransfers
+deactivate PISP
+PISP-->Payer: Notify Payer that the funds have been sent
+
+@enduml

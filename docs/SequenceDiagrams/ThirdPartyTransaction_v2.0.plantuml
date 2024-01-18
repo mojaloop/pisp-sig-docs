@@ -1,0 +1,204 @@
+@startuml
+' Flows are based on the third pary API v2.0
+footer Third Party Payment (TPP) API v2.0
+
+actor "Payer" as Payer
+participant "Third Party" as PISP
+participant "Payer DFSP" as PayerDFSP
+participant "Mojaloop" as Mojaloop  #d4f2f9
+participant "Account Lookup Service" as ALS  #d4f2f9
+participant "Auth-Service" as Auth  #d4f2f9
+participant "Payee DFSP" as PayeeDFSP
+actor "Payee" as Payee
+autonumber 1 "<b>[0]"
+
+=== Third Party Transfer (API v2.0) ==
+
+Payer->PISP: Initiate a payment
+
+== Discovery of Payer ==
+
+PISP->>ALS: **GET** /parties/THIRD_PARTY_LINK/{id}
+activate PISP
+note left
+  Normally not required as the 
+  Thirdparty provider already know 
+  the associated DFSP
+end note
+ALS->>PayerDFSP: **GET** /parties/THIRD_PARTY_LINK/{id}
+
+PayerDFSP->>ALS: **PUT** /parties
+ALS->>PISP: **PUT** /parties
+deactivate PISP
+
+
+== Third Party Payment : Discovery & Agreement ==
+PISP->>Mojaloop: **POST** /tppTransactionRequests
+activate PISP
+note left
+{
+  transactionRequestId: {id}
+  Payer: {
+    partyIdType:"THIRD_PARTY_LINK",
+    partyIdentifier:{dfsp.userId.AccountType},
+    fspId:{PayerDFSP}},
+  Payee: {...},
+  amountType: "SEND/RECEIVE",
+  amount:{...},
+  transactionType:{
+    scenario:"DEPOSIT/WITHDRAWAL/TRANSFER/PAYMENT/REFUND",
+    subScenario:{scheme specific}
+    initiator: "PAYER/PAYEE",
+    initiatorType: "CONSUMER/AGENT/BUSINESS/DEVICE",
+    refundInfo: {...},
+    balanceOfPayments: "123"
+  },
+  note: "any string here",
+  expiration: "2016-05-24T08:38:08.699-04:00"
+}
+end note
+Mojaloop->>PayerDFSP: **POST** /tppTransactionRequests
+note right
+The payer dfsp is already know by the TPP
+This information is supplied in the ttpTransactionRequest call
+and is used to route this to the correct Payer DFSP
+end note
+PayerDFSP->PayerDFSP: Lookup consent and validate
+PayerDFSP->PayerDFSP: Store transaction request and generate TransactionId
+PayerDFSP->>Mojaloop: **GET** /parties
+activate PayerDFSP
+note left
+  This is a standard Discovery flow
+  to lookup Payee
+end note
+Mojaloop->>PayeeDFSP: **GET** /parties
+
+
+PayeeDFSP->>Mojaloop: **PUT** /parties
+Mojaloop->>PayerDFSP: **PUT** /parties
+deactivate PayerDFSP
+
+PayerDFSP->PayerDFSP: Generate Quote Id (map to transaction request id)
+PayerDFSP->>Mojaloop: **POST** /quotes
+activate PayerDFSP
+note left
+Begin standard quotes flow
+end note
+Mojaloop->>PayeeDFSP: **POST** /quotes
+PayeeDFSP->>Mojaloop: **PUT** /quotes
+Mojaloop->>PayerDFSP: **PUT** /quotes
+deactivate PayerDFSP
+
+PayerDFSP->PayerDFSP: Generate Authorization request Id (map to transaction request id)
+  
+  PayerDFSP->PayerDFSP: Create the challenge (based off transfer details)
+  note left
+  Derive the authorisation challenge    
+  end note
+PayerDFSP->>Mojaloop: **PUT** /tppTransactionRequests
+note left
+Note: this is the content originally sent by
+**POST /thirdpartyRequests/Authorizations** We repurpose it as a response to the
+**/tppTransactionRequests** request to align with a simpler 3PPI requirement
+
+**PUT /tppTransactionRequests/2ab438fb-43ba-41db-a6f0-18a69fbea7cc**
+FSPIOP-Source: dfspPayer
+FSPIOP-Destination: pisp
+{
+  "authorizationRequestId": "bc8f5e1a-2a6f-4feb-b40b-793ea9fda7c2",
+  "transactionRequestId": "2ab438fb-43ba-41db-a6f0-18a69fbea7cc",
+  "challenge": "d9f69f0f2a1f286c204c7d0c8427d38af11ce7fcfb4cfdf6d32daaba2f56337d",
+  "transferAmount": {"amount": "500","currency": "PHP"},
+  "payer": {...},
+  "payee": {...},
+  "transactionType": {
+    "scenario": "TRANSFER",
+    "initiator": "PAYER",
+    "initiatorType": "CONSUMER"
+  },
+  "expiration": "2020-06-15T12:00:00.000"
+}
+end note
+Mojaloop->>PISP: **PUT** /tppTransactionRequests
+deactivate PISP
+
+PISP->Payer: Present terms of transfer\n and challenge (if there is one) to Payer
+
+== Third Party Payment : Transfer ==
+
+Payer->PISP: Payer accepts terms of transfer\n and signs challenge (if there is one)
+PISP->Mojaloop: **POST** /tppTransfers
+note left
+Provide signed challenge (if there is one)
+
+**POST /tppTransfers**
+FSPIOP-Source: pispa
+FSPIOP-Destination: dfspa
+{
+  "executionRequestId": "b0abec90-4be5-4c58-8f1a-e5a8c5cfde89",
+  "transactionRequestId": "2ab438fb-43ba-41db-a6f0-18a69fbea7cc",
+  "signedPayload": {
+    "signedPayloadType": "FIDO",
+    "value": {
+      "id": "string",
+      "rawId": "d9f69f0f2a1f286c204c7d0c8427d38af11ce7fcfb4cfdf6d32daaba2f56337d",
+      "response": {
+        "authenticatorData": "string - base64 encoded utf-8",
+        "clientDataJSON": "string - base64 encoded utf-8",
+        "signature": "f9d6e86c75e3f7b1cf9b43e8b5ff5fc31a9dc1ee77d66681243b01e3c3c6654c",
+        "userHandle": "string - base64 encoded utf-8",
+      },
+      "type": "public-key"
+    }
+  }
+}
+
+
+end note
+activate PISP
+Mojaloop->PayerDFSP: **POST** /tppTransfers
+deactivate PayerDFSP
+note left
+ Acceptance of transfer terms received
+ Signed challenge received (if there is one)
+end note
+PayerDFSP->PayerDFSP: Validate Transaction Request Id, \nAuthorisation Id and Consent Id
+
+alt if (Centralised Auth Service required to verify it)
+  PayerDFSP->PayerDFSP: Generate VerificationRequestId
+  PayerDFSP->Mojaloop: **POST** /tppVerifications
+  activate PayerDFSP
+  Mojaloop->Auth: **POST** /tppVerifications
+  Auth->Auth: Validate ConsentId,\n account Addresss, \nand signed consent
+  note left
+  Validate signed consent
+  end note
+  Auth->Mojaloop: **PUT** /tppVerifications
+  Mojaloop->PayerDFSP: **PUT** /tppVerifications
+  deactivate PayerDFSP
+else if (No centralised Auth Service configured)
+
+  PayerDFSP->PayerDFSP: Validate signed consent
+  note left
+  Validate signed consent
+  end note
+
+end 
+PayerDFSP->PayerDFSP: Generate Transfer Id (map to transaction request id)
+PayerDFSP->Mojaloop: **POST** /transfers
+activate PayerDFSP
+note left
+ Begin standard transfer flow
+end note
+Mojaloop->PayeeDFSP: **POST** /transfers
+PayeeDFSP->Payee: Distribute funds
+PayeeDFSP->Mojaloop: **PUT** /transfers
+Mojaloop->PayerDFSP: **PUT** /transfers
+deactivate PayerDFSP
+PayerDFSP->PayerDFSP: Lookup transferRequestId from TransferId
+PayerDFSP->Mojaloop: **PUT** /tppTransfers
+Mojaloop->PISP: **PUT** /tppTransfers
+deactivate PISP
+PISP->Payer: Notify Payer that the funds have been sent
+
+@enduml
