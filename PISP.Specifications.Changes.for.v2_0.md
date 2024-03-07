@@ -1,6 +1,6 @@
-## PISP API Specification
+# PISP API Specification
 
-# 1. Revision history
+## 1. Revision history
 
 | Version | Description | Modified By | Date |
 | --- | --- | --- | --- |
@@ -14,7 +14,7 @@
 | 1.7 | Revision to include Account lookup with consent | P. Baker | 4 July 2023 |
 | 1.8 | Revision to include transaction request authorization | P. Baker | 20 Jan 2024 |
 
-# 2. References
+## 2. References
 
 The following references are used in this specification:
 
@@ -63,7 +63,7 @@ The API is used by the following different types of participant, as follows:
 Each resource in the API definition is accompanied by a definition of the type(s) of participant allowed to access it.
 
 
-## 3. Resources
+# 3. Resources
 
 The PISP API will contain the following resources that are used by the PISP:
 1. [**services**](#31-services)  - identify PISP providers (Used by **PISP**, **Switch**)
@@ -77,15 +77,15 @@ The PISP API will contain the following resources that are used by the PISP:
 1. [**tppVerifications**](#310-tppverifications) - Centralized PISP authorization (Used by **DFSP**)
 
 
-### 3.1. services
+## 3.1. services
 
 The **services** resource is a new resource which enables a participant to query for other participants who offer a particular service. The requester will issue a **GET** request, specifying the type of service for which information is required as part of the query string. The switch will respond with a list of the current DFSPs in the scheme which are registered as providing that service.
 
-#### Requests
+### Requests
 
 The **services** resource will support the following requests.
 
-#### 3.1.1 **GET /services/**\<Type\>
+### 3.1.1 **GET /services/**\<Type\>
 
 Used by: PISP
 
@@ -96,11 +96,11 @@ Callback and data model information for GET /services/\<Type\>:
 - Error Callback - PUT /services/\<Type\>/error
 - Data Model – Empty body
 
-#### Callbacks
+### Callbacks
 
 This section describes the callbacks that are used by the server for services provided by the resource **/services**.
 
-#### 3.1.2 **PUT /services/**\<Type\>
+### 3.1.2 **PUT /services/**\<Type\>
 
 Used by: Switch
 
@@ -110,7 +110,7 @@ The callback **PUT /services/**\<Type\> is used to inform the client of a succes
 | --- | --- | --- | --- |
 | **serviceProviders** | 1…n | [FspId](#421-fspid) | A list of the Ids of the participants who provide the service requested. |
 
-#### 3.1.2 **PUT /services/**\<Type\>/error
+### 3.1.2 **PUT /services/**\<Type\>/error
 
 Used by: Switch
 
@@ -120,7 +120,7 @@ If the server encounters an error in fulfilling a request for a list of particip
 | --- | --- | --- | --- |
 | **errorInformation** | 1 | [ErrorInformation](#419-errorinformation) | Error code, category description. |
 
-### 3.2 tppAccountsRequest
+## 3.2 tppAccountsRequest
 
 The **/tppAccountsRequest** resource is used to request consent from a user for access to their accounts information. This resource must be called before the /tppAccounts resource can be queried which provides the account information. 
 HTTP methods supported:
@@ -146,7 +146,7 @@ Callback and data model for **POST /tppAccountsRequest** :
 | **authChannels** | 1..n | [ConsentRequestChannelType](#413-consentrequestchanneltype) | A collection of the types of authentication that the DFSP may use to verify that its customer has in fact requested access for the PISP to the accounts requested.. |
 | **callbackUri** | 0..1 | [Uri](#438-uri) | The callback URI that the user will be redirected to after completing verification via the WEB authorization channel |
 
-##### 3.2.2 **PUT /tppAccountsRequest/**\<ID\>
+### 3.2.2 **PUT /tppAccountsRequest/**\<ID\>
 
 Used by: DFSP
 
@@ -159,11 +159,11 @@ When a PISP requests a series of permissions from a DFSP on behalf of a DFSP's c
 | **authUri** | 0..1 | [Uri](#438-uri) | The URI that the PISP should call to complete the linking procedure if completion is required. |
 | **authToken** | 0..1 | [BinaryString](#410-binarystring) | The bearer token given to the PISP by the DFSP as part of the out-of-loop authentication process |
 
-#### Error callbacks
+### Error callbacks
 
 This section describes the error callbacks that are used by the server under the resource **/tppAccountsRequest**.
 
-##### 3.2.3 **PUT /tppAccountsRequest/\<ID\>/error**
+### 3.2.3 **PUT /tppAccountsRequest/\<ID\>/error**
 
 Used by: DFSP
 
@@ -173,7 +173,7 @@ If the server is unable to complete the accounts consent request, or if an out-o
 | --- | --- | --- | --- |
 | **errorInformation** | 1 | [ErrorInformation](#419-errorinformation) | Error code, category description. |
 
-### 3.3 tppAccounts
+## 3.3 tppAccounts
 
 The **/tppAccounts** resource is used to request information from a DFSP relating to the accounts it holds following from the /tppAccountsRequest API flow that is used to obtain permission for this request. The Correlation Id (accountRequestId) provided refers to the original authentication request, and the signed challenge that must be validated to complete the authentication. The PartyInfomation for this request will need to be looked up based on the account request Id provided.
 
@@ -181,11 +181,11 @@ The **PUT /tppAccounts** provides the account information to the PISP who can th
 
 The **/tppAccounts** resource supports the endpoints described below.
 
-#### Requests
+### Requests
 
 This section describes the services that a PISP can request on the **/tppAccounts** resource.
 
-#### 3.3.1 **GET /tppAccounts/\<accountRequestId\>/\<SignedChallenge\>**
+### 3.3.1 **GET /tppAccounts/\<accountRequestId\>/\<SignedChallenge\>**
 
 Used by: PISP
 
@@ -197,11 +197,11 @@ Callback and data model information for **GET /tppAccounts/\<accountRequestId\>/
 - Error Callback - [**PUT /tppAccounts/_\<__accountRequestId__\>_/error**](#333-put-tppaccountsaccountrequestiderror)
 - Data Model – Empty body
 
-#### Callbacks
+### Callbacks
 
 The responses for the **/tppAccounts** resource are as follows
 
-##### 3.3.2 **PUT /tppAccounts/\<accountRequestId\>**
+### 3.3.2 **PUT /tppAccounts/\<accountRequestId\>**
 
 Used by: DFSP
 
@@ -213,7 +213,7 @@ The data content of the message is given below.
 | --- | --- | --- | --- |
 | **accountList** | 1 | [AccountList](#43-accountlist) | Information about the accounts that the DFSP associates with the identifier sent by the PISP. |
 
-#### 3.3.3 **PUT /tppAccounts/\<accountRequestId\>/error**
+### 3.3.3 **PUT /tppAccounts/\<accountRequestId\>/error**
 
 Used by: DFSP
 
@@ -225,15 +225,15 @@ The data content of the message is given below.
 | --- | --- | --- | --- |
 | **errorInformation** | 1 | [ErrorInformation](#419-errorinformation) | The result of the authentication check carried out by the authentication service. |
 
-### 3.4 **tppConsentRequests**
+## 3.4 **tppConsentRequests**
 
 The **/tppConsentRequests** resource is used by a PISP to initiate the process of linking with a DFSP's account on behalf of a user. The PISP contacts the DFSP and sends a list of the permissions that it wants to obtain and the accounts for which it wants permission.
 
-#### Requests
+### Requests
 
 This section describes the services that can be requested by a client on the API resource **/tppConsentRequests**.
 
-#### 3.4.1 **GET /tppConsentRequests/\<ID\>**
+### 3.4.1 **GET /tppConsentRequests/\<ID\>**
 
 Used by: PISP
 
@@ -265,11 +265,11 @@ Callback and data model for **POST /tppConsentRequests** :
 | **authChannels** | 1..n | [ConsentRequestChannelType](#54-consentrequestchanneltype) | A collection of the types of authentication that the DFSP may use to verify that its customer has in fact requested access for the PISP to the accounts requested.. |
 | **callbackUri** | 0..1 | [Uri](#438-uri) | The callback URI that the user will be redirected to after completing verification via the WEB authorization channel |
 
-#### Callbacks
+### Callbacks
 
 This section describes the callbacks that are used by the server under the resource **/tppConsentRequests**.
 
-#### 3.4.3 **PATCH /tppConsentRequests/\<ID\>**
+### 3.4.3 **PATCH /tppConsentRequests/\<ID\>**
 
 Used by: DFSP, PISP
 
@@ -283,7 +283,7 @@ When a party intends to change the content of a consent request, it can do this 
 | **authUri** | 0..1 | [Uri](#438-uri) | The URI that the PISP should call to complete the linking procedure if completion is required. |
 | **authToken** | 0..1 | [BinaryString](#410-binarystring) | The bearer token given to the PISP by the DFSP as part of the out-of-loop authentication process |
 
-#### 3.4.4 **PUT /tppConsentRequests/\<ID\>**
+### 3.4.4 **PUT /tppConsentRequests/\<ID\>**
 
 Used by: DFSP
 
@@ -297,12 +297,12 @@ When a PISP requests a series of permissions from a DFSP on behalf of a DFSP's c
 | **authUri** | 0..1 | [Uri](#438-uri) | The URI that the PISP should call to complete the linking procedure if completion is required. |
 | **authToken** | 0..1 | [BinaryString](#410-binarystring) | The bearer token given to the PISP by the DFSP as part of the out-of-loop authentication process |
 
-#### Error callbacks
+### Error callbacks
 
 This section describes the error callbacks that are used by the server under the resource **/tppConsentRequests**.
 
         
-#### 3.4.5 **PUT /tppConsentRequests/\<ID\>/error**
+### 3.4.5 **PUT /tppConsentRequests/\<ID\>/error**
 
 Used by: DFSP
 
@@ -312,17 +312,17 @@ If the server is unable to complete the consent request, or if an out-of-loop pr
 | --- | --- | --- | --- |
 | **errorInformation** | 1 | [ErrorInformation](#419-errorinformation) | Error code, category description. |
 
-### 3.5 tppConsents
+## 3.5 tppConsents
 
 The **/tppConsents** resource is used to negotiate a series of permissions between the PISP and the DFSP which owns the account(s) on behalf of which the PISP wants to transact.
 
 The **/tppConsents** request is originally sent to the PISP by the DFSP following the original consent request process described in Section 3.4 above. At the close of this process, the DFSP which owns the customer's account(s) will have satisfied itself that its customer really has requested that the PISP be allowed access to their accounts, and will have defined the accounts in question and the type of access which is to be granted.
 
-#### Requests
+### Requests
 
 The **/tppConsents** resource will support the following requests.
 
-#### 3.5.1 **GET /tppConsents/\<ID\>**
+### 3.5.1 **GET /tppConsents/\<ID\>**
 
 Used by: DFSP
 
@@ -334,7 +334,7 @@ Callback and data model information for **GET /tppConsents/\<ID\>**:
 - Error Callback – **PUT /tppConsents/\<ID\>/error**
 - Data Model – Empty body
 
-##### 3.5.1 **POST /tppConsents**
+### 3.5.1 **POST /tppConsents**
 
 Used by: DFSP
 
@@ -357,7 +357,7 @@ Data Model – defined below
 | **credential** | 0..1 | [Credential](#416-credential) | The credential which is being used to support the consents. |
 | **extensionList** | 0..1 | [ExtensionList](#420-extensionlist) | Optional extension, specific to deployment |
 
-##### 3.5.2 **DELETE /tppConsents/\<ID\>**
+### 3.5.2 **DELETE /tppConsents/\<ID\>**
 
 The **DELETE /tppConsents/\<ID\>** request is used to request the deletion of a previously agreed consent. The switch should be sure not to delete the consent physically; instead, information relating to the consent should be marked as deleted and requests relating to the consent should not be honoured.
 
@@ -368,12 +368,12 @@ Callback and data model information for **DELETE /tppConsents/\<ID\>**:
 - Callback – **PUT /tppConsents/\<ID\>**
 - Error Callback – **PUT /tppConsents/\<ID\>/error**
 
-#### Callbacks
+### Callbacks
 
 The **/tppConsents** resource will support the following callbacks:
 
 
-#### 3.5.3 **PATCH/tppConsents/\<ID\>**
+### 3.5.3 **PATCH/tppConsents/\<ID\>**
 
 Used by: PISP
 
@@ -387,7 +387,7 @@ The syntax of this call complies with the JSON Merge Patch specification ([RFC73
 | **credential** | 0 | | |
 | **extensionList** | 0..1 | [ExtensionList](#420-extensionlist) | Optional extension, specific to deployment |
 
-#### 3.5.4 **PUT /tppConsents/\<ID\>**
+### 3.5.4 **PUT /tppConsents/\<ID\>**
 
 Used by: PISP
 
@@ -400,12 +400,12 @@ The **PUT /tppConsents/\<ID\>** resource is used to return information relating 
 | **credential** | 1 | [Credential](#416-credential) | Information about the challenge which relates to the consent. |
 | **extensionList** | 0..1 | [ExtensionList](#420-extensionlist) | Optional extension, specific to deployment |
 
-#### Error callbacks
+### Error callbacks
 
 This section describes the error callbacks that are used by the server under the resource **/tppConsents**.
 
         
-#### 3.5.5 **PUT /tppConsents/\<ID\>/error**
+### 3.5.5 **PUT /tppConsents/\<ID\>/error**
 
 Used by: PISP
 
@@ -415,27 +415,27 @@ If the server is unable to complete the consent, or if an out-of-loop processing
 | --- | --- | --- | --- |
 | **errorInformation** | 1 | [ErrorInformation](#419-errorinformation) | Error code, category description. |
 
-### 3.6 parties
+## 3.6 parties
 
 The **parties** resource will be used by the PISP to identify a party to a transfer. This will be used by the PISP to identify the payee DFSP when it requests a transfer.
 
 The PISP will be permitted to issue a PUT /parties response. Although it does not own any transaction accounts, there are circumstances in which another party may want to pay a customer via their PISP identification: for instance, where the customer is at a merchant's premises and tells the merchant that they would like to pay via their PISP app. In these circumstances, the PISP will need to be able to confirm that it does act for the customer.
 
-#### Requests
+### Requests
 
 The **parties** resource will support the following requests.
 
-##### 3.6.1 GET /parties
+### 3.6.1 GET /parties
 
 Used by: DFSP and optionally the PISP
 
 The **GET /parties** resource will use the same form as the resource described in Section 6.3.3.1 of Ref. 1 above.
 
-#### Callbacks
+### Callbacks
 
 The **parties** resource will support the following callbacks.
 
-##### 3.6.2 PUT /parties
+### 3.6.2 PUT /parties
 
 Used by: DFSP
 
@@ -483,19 +483,19 @@ Callback and data model information for **POST /tppAuthorizations** :
 
 | **Name** | **Cardinality** | **Type** | **Description** |
 | --- | --- | --- | --- |
-| **authorizationRequestId** | 1 | [CorrelationId](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.26in1rg) | Common ID between the PISP and the Payer DFSP for the transaction execution request object. The ID should be reused for resends of the same transaction execution request. A new ID should be generated for each new transaction execution request. |
-| **transactionRequestId** | 1 | [CorrelationId](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.26in1rg) | The unique identifier of the transaction request for which authorization execution is being requested. |
-| **challengeauthenticationInfo** | 0..1 | [BinaryString](#410-binarystring)[AuthenticationInfo](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.26in1rg) | The challenge that the PISP's client is to signEvidence that the challenge issued by the DFSP was correctly signed by the PISP application, and therefore that the customer has authorized the transfer.. |
-| **transactionId** | 1 | [CorrelationId](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.26in1rg) | The unique identifier for the proposed transaction. It is set by the payer DFSP and signed by the payee DFSP as part of the terms of the transfer |
-| **transferAmount** | 1 | [Money](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.1pxezwc) | The amount that will be debited from the sending customer's account as a consequence of the transaction. |
-| **payeeReceiveAmount** | 1 | [Money](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.1pxezwc) | The amount that will be credited to the receiving customer's account as a consequence of the transaction. |
-| **fees** | 1 | [Money](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.1pxezwc) | The amount of fees that the paying customer will be charged as part of the transaction. |
-| **payer** | 1 | [Party](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.2p2csry) | Information about the Payer in the proposed transaction |
-| **payee** | 1 | [Party](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.2p2csry) | Information about the Payee in the proposed transaction |
-| **transactionType** | 1 | [TransactionType](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.41mghml) | The type of the transaction. |
-| **condition** | 1 | [IlpCondition](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.3as4poj) | The condition returned by the payee DFSP to the payer DFSP as a cryptographic guarantee of the transfer. |
-| **expiration** | 1 | [DateTime](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.3l18frh) | The time by which the transfer must be completed, set by the payee DFSP. |
-| **extensionList** | 0..1 | [ExtensionList](https://docs.google.com/document/d/16p2xkWllBAaRkOkR8mfQ9nOfTq5JnzeT/edit#heading=h.206ipza) | Optional extension, specific to deployment. |
+| **authorizationRequestId** | 1 | [CorrelationId](#415-correlationid) | Common ID between the PISP and the Payer DFSP for the transaction execution request object. The ID should be reused for resends of the same transaction execution request. A new ID should be generated for each new transaction execution request. |
+| **transactionRequestId** | 1 | [CorrelationId](#415-correlationid) | The unique identifier of the transaction request for which authorization execution is being requested. |
+| **challengeauthenticationInfo** | 0..1 | [BinaryString](#410-binarystring)[AuthenticationInfo](#45-authenticationinfo) | The challenge that the PISP's client is to signEvidence that the challenge issued by the DFSP was correctly signed by the PISP application, and therefore that the customer has authorized the transfer.. |
+| **transactionId** | 1 | [CorrelationId](#415-correlationid) | The unique identifier for the proposed transaction. It is set by the payer DFSP and signed by the payee DFSP as part of the terms of the transfer |
+| **transferAmount** | 1 | [Money](#425-money) | The amount that will be debited from the sending customer's account as a consequence of the transaction. |
+| **payeeReceiveAmount** | 1 | [Money](#425-money) | The amount that will be credited to the receiving customer's account as a consequence of the transaction. |
+| **fees** | 1 | [Money](#425-money) | The amount of fees that the paying customer will be charged as part of the transaction. |
+| **payer** | 1 | [Party](#427-party) | Information about the Payer in the proposed transaction |
+| **payee** | 1 | [Party](#427-party) | Information about the Payee in the proposed transaction |
+| **transactionType** | 1 | [TransactionType](#436-transactiontype) | The type of the transaction. |
+| **condition** | 1 | [IlpCondition](#424-ilpcondition) | The condition returned by the payee DFSP to the payer DFSP as a cryptographic guarantee of the transfer. |
+| **expiration** | 1 | [DateTime](#418-datetime) | The time by which the transfer must be completed, set by the payee DFSP. |
+| **extensionList** | 0..1 | [ExtensionList](#420-extensionlist) | Optional extension, specific to deployment. |
 
 ### Callbacks
 
@@ -507,11 +507,11 @@ Used by: PISP
 
 The value in the \<ID\> field will be the executionRequestId that was included in the **POST /tppAuthorizations** to which this is a response. The **PUT /tppAuthorizations/**\<ID\> resource will have the same content as the **PUT /tppAuthorizations/**\<ID\>resource described in Section 6.6.4.1 of Ref. 1 above.
 
-#### Error callbacks
+### Error callbacks
 
 This section describes the error callbacks that are used by the server under the resource **/tppAuthorizations**.
 
-#### 3.7.4 **PUT /tppAuthorizations/\<ID\>/error**
+### 3.7.4 **PUT /tppAuthorizations/\<ID\>/error**
 
 Used by: DFSP
 
@@ -523,11 +523,11 @@ The **PUT /tppAuthorizations/\<ID\>/error** resource will have the same content 
 
 The **/tppTransfers** resource supports the endpoints described below.
 
-#### Requests
+### Requests
 
 This section describes the services that a client can request on the **/tppTransfers** resource.
 
-#### 3.8.1 **GET /tppTransfers/\<ID\>**
+### 3.8.1 **GET /tppTransfers/\<ID\>**
 
 Used by: DFSP
 
@@ -538,7 +538,7 @@ Callback and data model information for **GET /tppTransfers/** _\<ID\>_:
 - Error Callback - [**PUT /tppTransfers /_\<ID\>_/error**](#384-put-tpptransfersiderror)
 - Data Model – Empty body
 
-##### 3.8.2 **POST /tppTransfers**
+### 3.8.2 **POST /tppTransfers**
 
 Used by: DFSP
 
@@ -560,7 +560,7 @@ Callback and data model information for **POST /tppTransfers** :
 
 The following callbacks are supported for the **/tppTransfers** resource
 
-#### 3.8.3 **PUT /tppTransfers/\<ID\>**
+### 3.8.3 **PUT /tppTransfers/\<ID\>**
 
 Used by: PISP
 
@@ -570,8 +570,8 @@ The value in the \<ID\> field will be the executionRequestId that was included i
 
 This section describes the error callbacks that are used by the server under the resource **/tppTransfers**.
 
-        1.
-#### 3.8.4 **PUT /tppTransfers/\<ID\>/error**
+        
+### 3.8.4 **PUT /tppTransfers/\<ID\>/error**
 
 Used by: DFSP
 
@@ -583,11 +583,11 @@ The **/tppTransactionRequests** resource is analogous to the **/transactionReque
 
 The **/tppTransactionRequests** resource supports the endpoints described below.
 
-#### Requests
+### Requests
 
 This section describes the services that a client can request on the **/tppTransactionRequests** resource.
 
-#### 3.9.1 **GET /tppTransactionRequests/\<ID\>**
+### 3.9.1 **GET /tppTransactionRequests/\<ID\>**
 
 Used by: PISP
 
@@ -599,7 +599,7 @@ Callback and data model information for **GET /tppTransactionRequests/\<ID\>**:
 - Error Callback - [**PUT /tppTransactionRequests/\<ID\>/error**](#394-put-tpptransactionrequestsiderror)
 - Data Model – Empty body
 
-#### 3.9.2 **POST /tppTransactionRequests**
+### 3.9.2 **POST /tppTransactionRequests**
 
 Used by: PISP
 
@@ -627,7 +627,7 @@ Callback and data model information for **POST /tppTransactionRequests** :
 
 The following callbacks are supported for the **/tppTransactionRequests** resource
 
-#### 3.9.3 **PUT /tppTransactionRequests/\<ID\>**
+### 3.9.3 **PUT /tppTransactionRequests/\<ID\>**
 
 Used by: DFSP
 
@@ -648,11 +648,11 @@ The **PUT /tppTransactionRequests/\<ID\>** resource will have the following cont
 | **expiration** | 1 | [DateTime](#418-datetime) | The time by which the transfer must be completed, set by the payee DFSP. |
 | **extensionList** | 0..1 | [ExtensionList](#420-extensionlist) | Optional extension, specific to deployment. |
 
-#### Error callbacks
+### Error callbacks
 
 This section describes the error callbacks that are used by the server under the resource **/tppTransactionRequests.**
 
-#### 3.9.4 **PUT /tppTransactionRequests/\<ID\>/error**
+### 3.9.4 **PUT /tppTransactionRequests/\<ID\>/error**
 
 Used by: DFSP
 
@@ -664,11 +664,11 @@ The **/tppVerifications** resource is used by a Payer DFSP to verify that an aut
 
 The **/tppVerifications** resource supports the endpoints described below.
 
-#### Requests
+### Requests
 
 This section describes the services that a client can request on the **/tppVerifications** resource.
 
-##### 3.10.1 **GET /tppVerifications/\<ID\>**
+### 3.10.1 **GET /tppVerifications/\<ID\>**
 
 Used by: DFSP
 
@@ -677,7 +677,7 @@ The HTTP request **/tppVerifications\<ID\>** is used to get information regardin
 - Error Callback – PUT **/tppVerifications/\<ID\>/error**
 - Data Model – Empty body
 
-##### 3.10.2 **POST /tppVerifications**
+### 3.10.2 **POST /tppVerifications**
 
 Used by: DFSP
 
@@ -695,11 +695,11 @@ Callback and data model information for **POST /tppVerifications** :
 | **value** | 1 | [authenticationValue](#48-authenticationvalue) | The signed challenge returned by the PISP. |
 | **consentId** | 1 | [CorrelationId](#415-correlationid) | Common Id between the DFSP and the authentication service for the agreement against which the authentication service is to evaluate the signature |
 
-#### Callbacks
+### Callbacks
 
 This section describes the callbacks that are used by the server under the resource **/tppVerifications/**
 
-##### 3.10.3 **PUT /tppVerifications/**\<ID\>
+### 3.10.3 **PUT /tppVerifications/**\<ID\>
 
 Used by: FIDO
 
@@ -709,11 +709,11 @@ The callback **PUT /tppVerifications/\<ID\>** is used to inform the client of th
 | --- | --- | --- | --- |
 | **authorizationResponse** | 1 | [AuthenticationResponse](#51-authenticationresponse) | The result of the authorization check. |
 
-#### Error callbacks
+### Error callbacks
 
 This section describes the error callbacks that are used by the server under the resource **/tppVerifications**.
 
-##### 3.10.4 **PUT /tppVerifications/**\<ID\>**/error**
+### 3.10.4 **PUT /tppVerifications/**\<ID\>**/error**
 
 Used by: FIDO
 
@@ -729,7 +729,7 @@ The following additional data models will be required to support the PISP API
 
 ### 4. Element definitions
 
-#### 4.1 Account
+### 4.1 Account
 
 The Account data model contains information relating to an account
 
@@ -739,7 +739,7 @@ The Account data model contains information relating to an account
 | **currency** | 1 | [Currency]() | The currency in which the account is denominated |
 | **accountNickname** | 0..1 | [Name]() | Display name of the account, as set by the account owning DFSP. This will normally be a type name, such as "Transaction Account" or "Savings Account" |
 
-#### 4.2 AccountAddress
+### 4.2 AccountAddress
 
 The `AccountAddress` data type is a variable length string with a maximum size of 1023 characters and consists of:
 
@@ -775,7 +775,7 @@ _This address is also_ _ **routable** _ _to Blue DFSP because it uses the prefix
 
 **IMPORTANT** : The policy for defining addresses and the life-cycle of these is at the discretion of the address space owner (the payer DFSP in this case).
 
-#### 4.3 AccountList
+### 4.3 AccountList
 
 The AccountList data model is used to hold information about the accounts that a party controls.
 
@@ -783,7 +783,7 @@ The AccountList data model is used to hold information about the accounts that a
 | --- | --- | --- | --- |
 | **account** | 1..n | [Account](#41-account) | Information relating to an account that a party controls. |
 
-#### 4.4 AuthenticationChannel
+### 4.4 AuthenticationChannel
 
 The _AuthenticationChannel_ data model is used to specify the type of out-of-loop authentication to use in verifying a customer's wish to grant permissions to a PISP.
 
@@ -791,19 +791,19 @@ The _AuthenticationChannel_ data model is used to specify the type of out-of-loo
 | --- | --- | --- | --- |
 | **AuthenticationChannel** | 1 | Enum of String(1..32) | See Section 3.2.2.2 below for more information on allowed values. |
 
-#### 4.5 AuthenticationInfo
+### 4.5 AuthenticationInfo
 
 The **AuthenticationInfo** data type used in these definitions is as defined in Section 7.4.1 of Ref. 1 above.
 
-#### 4.6 AuthenticationResponse
+### 4.6 AuthenticationResponse
 
 The **AuthenticationResponse** data type is an enumeration of type [AuthenticationResponse](#51-authenticationresponse).
 
-#### 4.7 AuthenticationType
+### 4.7 AuthenticationType
 
 The **AuthenticationType** data type used in these definitions is as defined in Section 7.5.2 of Ref. 1 above. It is enumerated by the [AuthorizationChannelType](#52-authorizationchanneltype) enumeration.
 
-#### 4.8 AuthenticationValue
+### 4.8 AuthenticationValue
 
 The AuthenticationValue data element contains a response returned by the recipient of an authorization request. It is described in Section 7.3.3 of Ref. 1 above, and is extended to support the new authentication type used for PISP. The data model is as follows:
 
@@ -811,7 +811,7 @@ The AuthenticationValue data element contains a response returned by the recipie
 | --- | --- | --- | --- |
 | **AuthenticationValue** | 1 | Depending on [AuthenticationType](#47-authenticationtype):  If OTP: **OtpValue**;  If **QRCODE**: String(1..64); If **U2F**: [BinaryString](#410-binarystring) | Contains the authentication value. The format depends on the authentication type used in the [AuthenticationInfo](#45-authenticationinfo) complex type. |
 
-#### 4.9 AuthenticatorAttestationResponse
+### 4.9 AuthenticatorAttestationResponse
 
 The AuthenticatorAttestationResponse object is used to store information relating to a credential which a PISP has created on a user's device. It contains the following items of information.
 
@@ -822,15 +822,15 @@ The AuthenticatorAttestationResponse object is used to store information relatin
 | **origin** | 1 | string | The fully qualified origin of the requester which has been given by the client/browser to the authenticator. |
 | **tokenBindingId** | 0..1 | [TokenBindingState](#434-tokenbindingstate) | An object describing the state of the token binding protocol for the communication with the relying party. |
 
-#### 4.10 BinaryString
+### 4.10 BinaryString
 
 The **BinaryString** type used in these definitions is as defined in Section 7.2.17 of Ref. 1 above.
 
-#### 4.11 BinaryString32
+### 4.11 BinaryString32
 
 The **BinaryString32** type used in these definitions is as defined in Section 7.2.18 of Ref. 1 above.
 
-#### 4.12 Challenge
+### 4.12 Challenge
 
 The Challenge object is used to hold a FIDO challenge and its associated signature.
 
@@ -839,7 +839,7 @@ The Challenge object is used to hold a FIDO challenge and its associated signatu
 | **payload** | 1 | String | The value to be signed by the PISP |
 | **signature** | 0..1 | [BinaryString](#410-binarystring)(256) | The signature produced by the application of the PISP's private key to the payload. |
 
-#### 4.13 ConsentRequestChannelType
+### 4.13 ConsentRequestChannelType
 
 The **ConsentRequestChannelType** is used to hold an instance of the ConsentRequestChannelType enumeration. Its data model is as follows:
 
@@ -847,7 +847,7 @@ The **ConsentRequestChannelType** is used to hold an instance of the ConsentRequ
 | --- | --- | --- | --- |
 | **ConsentRequestChannelType** | 1 | Enum of String(1..32) | See Section 3.2.2.4 below[ConsentRequestChannelType](#54-consentrequestchanneltype) for more information on allowed values. |
 
-#### 4.14 ConsentState
+### 4.14 ConsentState
 
 The ConsentState type stores the status of a consent request, as described in Section 3.1.3.2.2 above. Its data model is as follows:
 
@@ -855,11 +855,11 @@ The ConsentState type stores the status of a consent request, as described in Se
 | --- | --- | --- | --- |
 | **ConsentState** | 1 | Enum of String(1..32) | See Section 3.2.2.5 below [ConsentStatusType](#55-consentstatustype) for more information on allowed values. |
 
-#### 4.15 CorrelationId
+### 4.15 CorrelationId
 
 The **CorrelationId** type used in these definitions is as defined in Section 7.3.8 of Ref. 1 above.
 
-#### 4.16 Credential
+### 4.16 Credential
 
 The Credential object is used to store information about a challenge which is exchanged with an authentication service. The data model is as follows:
 
@@ -873,7 +873,7 @@ The Credential object is used to store information about a challenge which is ex
 - If the credential type is GENERIC, then the type of the payload will be [GenericCredential](#423-genericcredential).
  | A description of the credential and information which allows the recipient of the credential to test its veracity. |
 
-#### 4.17 CredentialState
+### 4.17 CredentialState
 
 The **CredentialState** data type stores the state of a credential request. Its data model is as follows.
 
@@ -881,27 +881,27 @@ The **CredentialState** data type stores the state of a credential request. Its 
 | --- | --- | --- | --- |
 | **CredentialState** | 1 | Enum of String(1..32) | See Section 3.2.2.5 below [CredentialState](#56-credentialstate) for more information on allowed values. |
 
-#### 4.18 DateTime
+### 4.18 DateTime
 
 The **DateTime** data type used in these definitions is as defined in Section 7.2.14 of Ref. 1 above.
 
-#### 4.19 ErrorInformation
+### 4.19 ErrorInformation
 
 The **ErrorInformation** data type used in these definitions is as defined in Section 7.4.2 of Ref. 1 above
 
-#### 4.20 ExtensionList
+### 4.20 ExtensionList
 
 The **ExtensionList** data type used in these definitions is as defined in Section 7.4.4 of Ref. 1 above.
 
-#### 4.21 FspId
+### 4.21 FspId
 
 The **FspId** data type used in these definitions is as defined in Section 7.3.16 of Ref. 1 above.
 
-#### 4.22 GeoCode
+### 4.22 GeoCode
 
 The **GeoCode** data type used in these definitions is as defined in Section 7.4.9 of Ref. 1 above.
 
-#### 4.23 GenericCredential
+### 4.23 GenericCredential
 
 The GenericCredential object stores the payload for a credential which is validated according to a comparison of the signature created from the challenge using a private key against the same challenge signed using a public key. Its content is as follows.
 
@@ -910,23 +910,23 @@ The GenericCredential object stores the payload for a credential which is valida
 | **publicKey** | 0..1 | [BinaryString32](#411-binarystring32) | The public key to be used in checking the signature. Only required if the public key has not already been registered. |
 | **signature** | 1 | [BinaryString32](#411-binarystring32) | The signature to be checked against the public key. |
 
-#### 4.24 ilpCondition
+### 4.24 ilpCondition
 
 The **ilpCondition** type used in these definitions is as defined in Section 7.3.17 of Ref. 1 above.
 
-#### 4.24 Integer
+### 4.24 Integer
 
 The **Integer** type used in these definitions is as defined in Section 7.2.5 of Ref. 1 above.
 
-#### 4.25 Money
+### 4.25 Money
 
 The **Money** type used in these definitions is a defined in Section 7.4.10 of Ref. 1 above.
 
-#### 4.26 Note
+### 4.26 Note
 
 The **Note** data type used in these definitions is as defined in Section 7.3.23 of Ref. 1 above.
 
-#### 4.27 Party
+### 4.27 Party
 
 The following shows a proposed revision of the Party data element to support the additional information required to support PISP interactions.
 
@@ -938,11 +938,11 @@ The following shows a proposed revision of the Party data element to support the
 | **personalInfo** | 0..1 | [PartyPersonalInfo]() | Personal information used to verify identity of Party such as first, middle, last name and date of birth. |
 | **accounts** | 0..1 | AccountList | A list of the accounts that the party has. |
 
-#### 4.28 PartyIdInfo
+### 4.28 PartyIdInfo
 
 The **PartyIdInfo** data type used in these definitions is as defined in Section 7.4.13 of Ref. 1 above.
 
-#### 4.29 PublicKeyCredential
+### 4.29 PublicKeyCredential
 
 The PublicKeyCredential object contains information about a credential created on a device by a PISP. It contains the following items of information.
 
@@ -951,7 +951,7 @@ The PublicKeyCredential object contains information about a credential created o
 | **credentialId** | 1 | [CorrelationId](#415-correlationid) | An identifier for the credential |
 | **attestationResponse** | 1 | [AuthenticationAttestationResponse](#49-authenticatorattestationresponse) | Information about the credential that was set up on the user's device. |
 
-#### 4.30 Quote
+### 4.30 Quote
 
 The **Quote** object is used to collect the information on the terms of a transfer which a Payee DFSP returns as part of the positive response to a quotation. This information is forwarded to the PISP by the Payer DFSP so that the PISP's customer can make an informed consent to the transfer, and is forwarded to the authentication service (if one is used) to confirm the _bona fides_ of the authorization received from the PISP.
 
@@ -976,7 +976,7 @@ The Scope element contains an identifier defining, in the terms of a DFSP, an ac
 | **credential** | 0..1 | [Credential](#416-credential) | The credential which is to be applied to the scope. |
 | **partyIdInfo** | 0..1 | [PartyIdInfo](#428-partyidinfo) | The identifier which the PISP should use to access the account. |
 
-#### 4.32 ScopeAction
+### 4.32 ScopeAction
 
 The ScopeAction element contains an access type which a PISP can request from a DFSP, or which a DFSP can grant to a PISP. It must be a member of the appropriate enumeration.
 
@@ -984,7 +984,7 @@ The ScopeAction element contains an access type which a PISP can request from a 
 | --- | --- | --- | --- |
 | **scopeAction** | 1 | Enum of String (1..32) | See Section 0 below [ScopeEnumeration](#59-scopeenumeration) for more information on allowed values. |
 
-#### 4.33 ServiceType
+### 4.33 ServiceType
 
 The ServiceType element contains a type of service where the requester wants a list of the participants in the scheme which provide that service. It must be a member of the appropriate enumeration.
 
@@ -992,7 +992,7 @@ The ServiceType element contains a type of service where the requester wants a l
 | --- | --- | --- | --- |
 | **serviceType** | 1 | Enum of String (1..32) | See Section [ServiceType](#510-servicetype) for more information on allowed values. |
 
-#### 4.34 TokenBindingState
+### 4.34 TokenBindingState
 
 The **TokenBindingState** object describes the state of a token binding protocol for communication with a relying party for a public key credential. It contains the following items of information.
 
@@ -1001,7 +1001,7 @@ The **TokenBindingState** object describes the state of a token binding protocol
 | **status** | 1 | [TokenBindingStateStatus](#511-tokenbindingstatestatus) | Denotes whether or not token binding has been used to negotiate with the relying party. |
 | **id** | 1 | String | The base64url encoding of the token binding ID which was used for the communication. |
 
-#### 4.35 Transaction
+### 4.35 Transaction
 
 The **Transaction** type used in these definitions is as defined in Section 7.4.17 of Ref. 1 above, but with extensions to include the additional information required for verification and consent in the PISP ecosystem.
 
@@ -1020,15 +1020,15 @@ The **Transaction** type used in these definitions is as defined in Section 7.4.
 | **note** | 0..1 | [Note](#426-note) | Memo associated to the transaction, intended to the Payee. |
 | **extensionList** | 0..1 | [ExtensionList](#420-extensionlist) | Optional extension, specific to deployment. |
 
-#### 4.36 TransactionType
+### 4.36 TransactionType
 
 The _TransactionType_ type used in these definitions is as defined in Section 7.4.18 of Ref. 1 above.
 
-#### 4.37 TransferState
+### 4.37 TransferState
 
 The _TransferState_ type used in these definitions is as defined in Section 7.3.35 of Ref. 1 above.
 
-#### 4.38 Uri
+### 4.38 Uri
 
 The API data type **Uri** is a JSON string in a canonical format that is restricted by a regular expression for interoperability reasons. The regular expression for restricting the **Uri** type is as follows:
 
@@ -1036,9 +1036,9 @@ The API data type **Uri** is a JSON string in a canonical format that is restric
 ^(([^:/?#]+):)?(//([^/?#]\*))?([^?#]\*)(\?([^#]\*))?(#(.\*))?
 ```
 
-### 5 Enumerations
+# 5 Enumerations
 
-#### 5.1 AuthenticationResponse
+### 5.1 AuthenticationResponse
 
 The AuthenticationResponse enumeration describes the result of authenticating a FIDO challenge.
 
@@ -1048,7 +1048,7 @@ The AuthenticationResponse enumeration describes the result of authenticating a 
 | **REJECTED** | The challenge was not correctly signed. |
 | **RESEND** | A problem occurred. Please re-submit. |
 
-#### 5.2 AuthorizationChannelType
+### 5.2 AuthorizationChannelType
 
 This is an extension of the AuthenticationType enumeration described in Section 7.5.2 of Ref. 1 above.
 
@@ -1058,18 +1058,18 @@ This is an extension of the AuthenticationType enumeration described in Section 
 | **QRCODE** | QR code used as One Time Password. |
 | **U2F** | A FIDO challenge |
 
-#### 5.3 AuthorizationResponse
+### 5.3 AuthorizationResponse
 
 The **AuthorizationResponseType** enumeration is the same as the **AuthorizationResponse** enumeration described in Section 7.5.3 of Ref. 1 above.
 
-#### 5.4 ConsentRequestChannelType
+### 5.4 ConsentRequestChannelType
 
 | **Name** | **Description** |
 | --- | --- |
 | **WEB** | PISP can support authorization via a web-based login |
 | **OTP** | PISP can support authorization via a One Time PIN |
 
-#### 5.5 ConsentStatusType
+### 5.5 ConsentStatusType
 
 The ConsentStatusType enumeration describes the allowed status values that a consent item can have. These are as follows:
 
@@ -1078,7 +1078,7 @@ The ConsentStatusType enumeration describes the allowed status values that a con
 | **PENDING** | The consent item has been proposed but not yet approved. |
 | **VERIFIED** | The consent item has been verified and approved. |
 
-#### 5.6 CredentialState
+### 5.6 CredentialState
 
 This contains the allowed values for the state of a credential state
 
@@ -1090,7 +1090,7 @@ This contains the allowed values for the state of a credential state
 | **REJECTED** | Authentication service has rejected the credential. |
 | **VERIFIED** | Authentication service has verified the credential |
 
-#### 5.7 CredentialType
+### 5.7 CredentialType
 
 The CredentialType enumeration contains the allowed values for the type of credential which is associated with a permission.
 
@@ -1099,7 +1099,7 @@ The CredentialType enumeration contains the allowed values for the type of crede
 | **FIDO** | The credential is based on a FIDO challenge. Its payload is a PublicKeyCredential object. |
 | **GENERIC** | The credential is based on a simple public key validation. Its payload is a GenericCredential object |
 
-#### 5.8 PartyIdType
+### 5.8 PartyIdType
 
 The PartyIdType enumeration is extended for PISPs to include a definition for the identifier which represents a link between a specific PISP and an account at a DFSP which a customer has given the PISP permission to access.
 
@@ -1115,7 +1115,7 @@ The PartyIdType enumeration is extended for PISPs to include a definition for th
 | **ALIAS** | An alias is used in reference to a participant. The alias should be created in the FSP as an alternative reference to an account owner. Another example of an alias is a username in the FSP system. The ALIAS identifier can be in any format. It is also possible to use the [**PartySubIdOrType**]() element for identifying an account under an Alias defined by the [**PartyIdentifier**](). |
 | **THIRD\_PARTY\_LINK** | A third-party link which represents an agreement between a specific PISP and a customer's account at a DFSP. The content of the link is created by the DFSP at the time when it gives permission to the PISP for specific access to a given account. |
 
-#### 5.9 ScopeEnumeration
+### 5.9 ScopeEnumeration
 
 | **Name** | **Description** |
 | --- | --- |
@@ -1125,7 +1125,7 @@ The PartyIdType enumeration is extended for PISPs to include a definition for th
 | **PAYMENT\_REQUEST** | PISP can initiate a payment request into the user's linked account |
 | **VERIFY\_PAYMENT** | DFSP can request payer authorisation for a payee initiated payment request |
 
-#### 5.10 ServiceType
+### 5.10 ServiceType
 
 The **ServiceType** enumeration describes the types of role for which a DFSP may query using the **/services** resource.
 
@@ -1136,7 +1136,7 @@ The **ServiceType** enumeration describes the types of role for which a DFSP may
 | **FXP** | PISPs |
 | **FIDO\_SERVER** | Servers which provide FIDO authentication services |
 
-#### 5.11 TokenBindingStateStatus
+### 5.11 TokenBindingStateStatus
 
 The TokenBindingStateStatus enumeration describes the possible status values for a token binding state object associated with a public key credential. It forms part of the [**TokenBindingState**](#434-tokenbindingstate) object.
 
@@ -1145,7 +1145,7 @@ The TokenBindingStateStatus enumeration describes the possible status values for
 | **supported** | The client supports token binding but did not negotiate with the relying party. |
 | **present** | Token binding was used already. |
 
-#### 5.12 WebAuthenticationType
+### 5.12 WebAuthenticationType
 
 The **WebAuthenticationType** enumeration defines the type of a web authentication credential. It forms part of the [**AuthenticatorAttestationResponse**](#49-authenticatorattestationresponse) object.
 
