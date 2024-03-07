@@ -71,7 +71,7 @@ Payer->PISP: User selects the account/s to link with
 note left 
 Accounts to link
 end note
-PISP->>Mojaloop: **POST** /tppConsentRequests 
+PISP->>Mojaloop: **POST** /tppConsentRequests/{Id}\n PISP requests to link actions to accounts
 activate PISP
 note left 
 1. User Id
@@ -84,16 +84,29 @@ note left
 3. Acceptable authentication channels
    - Web
    - OTP
-4. Callback URL
+4. Callback URL "pisp-app://callback..."
 end note
-Mojaloop->>PayerDFSP:**POST** /tppConsentRequests 
+Mojaloop->>PayerDFSP:**POST** /tppConsentRequests/{Id} 
 PayerDFSP->PayerDFSP: Validate the consent request
 alt if Web authentication
 PayerDFSP->PayerDFSP: Configure deployment to support callback URL
 end
 PayerDFSP->Payer: Prepare user for challenge
 
-PayerDFSP->>Mojaloop:**PUT** /tppConsentRequests 
+PayerDFSP->>Mojaloop:**PUT** /tppConsentRequests/{Id}\n DFSP confirm linking of actions on accounts
+note left
+1. Confirmed scope of request
+  [{accountId:{dfsp.userId.AccountType}},
+  actions:
+  ["ACCOUNTS_GET_BALANCE", 
+   "ACCOUNTS_TRANSFER", 
+   "ACCOUNTS_STATEMENT"]}]
+2. Confirmed Acceptable authentication channels
+   - Web
+3. Callback URL "pisp-app://callback..."
+4. authUri: "dfspa.com/authorize?{Id}"
+end note
+
 Mojaloop->>PISP: **PUT** /tppConsentRequests 
 
 PISP->Payer: Present challenge to user
@@ -127,7 +140,7 @@ note right
 4. address provided {dfsp.userId.AccountType}
 end note
 Mojaloop->>PISP: **POST** /tppConsents
-
+PISP->PISP: Store key pair mapping of\n address to use for each \naccount in future transaction
 == Credential Registration ==
 PISP->PISP: Derive the Challenge
 note right
