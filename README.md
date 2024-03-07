@@ -14,6 +14,10 @@ This version will include the following improvement on the version 1.0 of the PI
 3. Use of PISP to perform acceptance of transfer in the Request to Pay of Payee Initiated payment use case.
 4. Design extension of PISP API to support the PISP request to pay use case.
 
+### PISP 2.0 Specification Changes
+[PISP Specifications Changes for v2_0](./PISP.Specifications.Changes.for.v2_0.md)
+
+
 ## Next Next PISP API Summary
 [PISP API Bulk Sequence Diagrams](./PISP_Bulk.md)
 

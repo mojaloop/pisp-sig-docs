@@ -1,0 +1,83 @@
+@startuml
+' Flows are based on the third pary API v2.0
+footer Third Party Payment (TPP) API v2.0 Cancel Consent flow
+
+actor "Payer" as Payer
+participant "Third Party" as PISP
+participant "Payer DFSP" as PayerDFSP
+box Mojaloop Hub
+participant "Mojaloop" as Mojaloop  #d4f2f9
+participant "Account Lookup Service" as ALS  #d4f2f9
+participant "Auth-Service" as Auth  #d4f2f9
+end box
+autonumber 1 "<b>[0]"
+
+=== Cancel Consent via PISP ==
+
+Payer -> PISP: requests to cancel consent
+activate PISP
+PISP -> PISP: Validated Payer \nand revoke consent
+PISP -> PISP: Mark consent as revoked
+PISP ->> Mojaloop: **DELETE** /tppConsents/{ID}
+note left
+FSPIOP-Source: payer pisp
+FSPIOP-Destination: dfsp
+end note
+
+alt if (Centralised Auth Service)
+Mojaloop -> ALS: **GET** /participants/CONSENT/{ID}
+ALS --> Mojaloop: { "FSPID": "central-auth" }
+Mojaloop ->> Auth: **DELETE** /tppConsents/{ID}
+Auth -> Auth: Mark consent as revoked
+Auth ->> Mojaloop: **PATCH** /tppConsents/{ID}
+else
+Mojaloop ->> PayerDFSP: **DELETE** /tppConsents/{ID}
+PayerDFSP -> PayerDFSP: Mark consent as revoked
+PayerDFSP ->> Mojaloop: **PATCH** /tppConsents/{ID}
+end
+
+Mojaloop ->> PISP: **PATCH** /tppConsents/{ID}
+
+deactivate PISP
+
+Mojaloop ->> PayerDFSP: **PATCH** /tppConsents/{ID}
+PayerDFSP -> PayerDFSP: if (Centralised Auth Service) \nMark consent as revoked
+
+=== Cancel Consent via DFSP ==
+
+Payer -> PayerDFSP: requests to cancel consent
+activate PayerDFSP
+PayerDFSP -> PayerDFSP: Validated Payer \nand revoke consent
+PayerDFSP -> PayerDFSP: Mark consent as revoked
+
+
+alt if (Centralised Auth Service)
+PayerDFSP ->> Mojaloop: **DELETE** /tppConsents/{ID}
+note left
+FSPIOP-Source: dfsp
+FSPIOP-Destination: payer pisp
+end note
+
+Mojaloop -> ALS: **GET** /participants/CONSENT/{ID}
+ALS --> Mojaloop: { "FSPID": "central-auth" }
+Mojaloop ->> Auth: **DELETE** /tppConsents/{ID}
+Auth -> Auth: Mark consent as revoked
+Auth ->> Mojaloop: **PATCH** /tppConsents/{ID}
+else
+PayerDFSP ->> Mojaloop: **PATCH** /tppConsents/{ID}
+note left
+FSPIOP-Source: dfsp
+FSPIOP-Destination: payer pisp
+end note
+end
+
+Mojaloop ->> PISP: **PATCH** /tppConsents/{ID}
+PISP -> PISP: Mark consent as revoked
+
+Mojaloop ->> PayerDFSP: **PATCH** /tppConsents/{ID}
+deactivate PayerDFSP
+
+
+@enduml
+
+
