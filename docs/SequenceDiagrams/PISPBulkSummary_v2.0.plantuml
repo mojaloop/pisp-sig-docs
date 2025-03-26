@@ -24,13 +24,7 @@ For example
       "partyIdentifier": "16135551212",
       "partySubIdOrType": "string",
     },
-    "personalInfo": {
-      "complexName": {
-        "firstName": "Henrik",
-        "middleName": "Johannes",
-        "lastName": "Karlsson"
-      }
-    }
+    "name": "string"    
   }]
 }
 end note
@@ -49,19 +43,25 @@ note left
 end note
 Mojaloop->Mojaloop: query oracle to \ndetermine Payee DFSP
 Mojaloop->>PayeeDFSP: **GET** /parties
-PayeeDFSP->>Mojaloop: **PUT** /parties
-Mojaloop->>PISP: **PUT** /parties
+PayeeDFSP->>Mojaloop: #blue **PUT** /parties
+Mojaloop->>PISP: #blue **PUT** /parties
 deactivate PISP
 end 
 PISP->PISP: Validate that all the account names\n returned by the GET /parties\n match the names provided
-
+hnote left #ffa5a5
+ **FRAUD Check:** 
+ In order to minimize fraud, 
+ the **PISP** should validate 
+ that the account names match 
+ the names returned in discovery.
+end note
 PISP-->Payer: Return 
 
 === Bulk Transfer ==
 
 Payer->PISP: Initiate a bulk payment
 
-PISP->>Mojaloop: **POST** /tppBulkTransactions
+PISP->>Mojaloop: **POST** /pispBulkTransactions
 activate PISP
 note left
 {
@@ -94,7 +94,7 @@ note left
   extensionList: [{key:{},value:{}},],
 }
 end note
-Mojaloop->>PayerDFSP: **POST** /tppBulkTransactions
+Mojaloop->>PayerDFSP: **POST** /pispBulkTransactions
 PayerDFSP->PayerDFSP: Lookup consent and validate
 PayerDFSP->PayerDFSP: Store transaction request and generate BulkTransactionId
 note left
@@ -116,8 +116,8 @@ end hnote
         Lookup / validate 
         party information
         end note
-      PayeeDFSP-->>Mojaloop: **PUT** /parties/{type}/{id}
-    Mojaloop-->>PayerDFSP: **PUT** /parties/{type}/{id}
+      PayeeDFSP-->>Mojaloop: #blue **PUT** /parties/{type}/{id}
+    Mojaloop-->>PayerDFSP: #blue **PUT** /parties/{type}/{id}
     deactivate PayerDFSP
 
 end Loop
@@ -132,12 +132,12 @@ hnote right of PayerDFSP
   perform AML checks and add costs 
   or discounts to each transfer.
 end hnote
-    PayerDFSP ->> Mojaloop: **POST** /bulkquotes
+    PayerDFSP ->> Mojaloop: #blue **POST** /bulkquotes
     activate PayerDFSP
-    Mojaloop->>PayeeDFSP: **POST** /bulkquotes
+    Mojaloop->>PayeeDFSP: #blue **POST** /bulkquotes
       PayeeDFSP->PayeeDFSP: Validate bulk quote & \ncalculate fees & \nperform AML checks
-    PayeeDFSP-->>Mojaloop: **PUT** /bulkquotes/{id)
-    Mojaloop-->>PayerDFSP: **PUT** /bulkquotes/{id)
+    PayeeDFSP-->>Mojaloop: #blue **PUT** /bulkquotes/{id)
+    Mojaloop-->>PayerDFSP: #blue **PUT** /bulkquotes/{id)
     deactivate  PayerDFSP
 end loop
 
@@ -148,9 +148,9 @@ note left
  Derive the authorisation challenge    
 end note
 
-PayerDFSP->Mojaloop: **PUT** /tppBulkTransactitons
+PayerDFSP->Mojaloop: #blue **PUT** /pispBulkTransactitons
 note left
-**PUT /tppBulkTransactions/2ab438fb-43ba-41db-a6f0-18a69fbea7cc**
+**PUT /pispBulkTransactions/2ab438fb-43ba-41db-a6f0-18a69fbea7cc**
 FSPIOP-Source: dfspPayer
 FSPIOP-Destination: pisp
 {
@@ -168,7 +168,7 @@ FSPIOP-Destination: pisp
   "expiration": "2020-06-15T12:00:00.000"
 }
 end note
-Mojaloop->PISP: **PUT** /tppBulkTransactitons
+Mojaloop->PISP: **PUT** /pispBulkTransactitons
 deactivate PISP
 
 PISP->Payer: Present challenge to Payer
@@ -176,11 +176,11 @@ PISP->Payer: Present challenge to Payer
 == Thirdpary Transaction Request : Transfer ==
 
 Payer->PISP: Payer signs challenge
-PISP->>Mojaloop: **POST** /tppBulkTransfers
+PISP->>Mojaloop: #blue **POST** /pispBulkTransfers
 note left
 Provide signed challenge 
 
-**POST /tppBulkTransfers**
+**POST /pispBulkTransfers**
 FSPIOP-Source: pispa
 FSPIOP-Destination: dfspa
 {
@@ -203,7 +203,7 @@ FSPIOP-Destination: dfspa
 }
 end note
 activate PISP
-Mojaloop->>PayerDFSP: **POST** /tppBulkTransfers
+Mojaloop->>PayerDFSP: **POST** /pispBulkTransfers
 deactivate PayerDFSP
 note left
  Acceptance of transfer terms received
@@ -214,15 +214,15 @@ PayerDFSP->PayerDFSP: Validate Transaction Request Id, \nAuthorisation Id and Co
 alt if (Centralised Auth Service required to verify it)
 
   PayerDFSP->PayerDFSP: Generate VerificationRequestId
-  PayerDFSP->>Mojaloop: **POST** /tppVerifications
+  PayerDFSP->>Mojaloop: **POST** /pispVerifications
   activate PayerDFSP
-  Mojaloop->>Auth: **POST** /ttpVerifications
+  Mojaloop->>Auth: **POST** /pispVerifications
   Auth->Auth: Validate ConsentId,\n account Addresss, \nand signed consent
   note left
   Validate signed consent
   end note
-  Auth->>Mojaloop: **PUT** /ttpVerifications
-  Mojaloop->>PayerDFSP: **PUT** /ttpVerifications
+  Auth->>Mojaloop: **PUT** /pispVerifications
+  Mojaloop->>PayerDFSP: **PUT** /pispVerifications
   deactivate PayerDFSP
 
 else if (No centralised Auth Service configured)
@@ -249,8 +249,8 @@ loop Transfer Processing: For each batch in bulk message
     deactivate PayerDFSP    
 end loop
 
-PayerDFSP->>Mojaloop: **PUT** /ttpBulkTransfers
-Mojaloop->>PISP: **PUT** /ttpBulkTransfers
+PayerDFSP->>Mojaloop: **PUT** /pispBulkTransfers
+Mojaloop->>PISP: **PUT** /pispBulkTransfers
 deactivate PISP
 PISP-->Payer: Notify Payer that the funds have been sent
 
